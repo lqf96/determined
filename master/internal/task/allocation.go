@@ -665,7 +665,7 @@ func (a *Allocation) registerProxies(ctx *actor.Context, msg sproto.ResourcesSta
 			ServiceID: cfg.ServiceID,
 			URL: &url.URL{
 				Scheme: "http",
-				Host:   fmt.Sprintf("%s:%d", address.HostIP, address.HostPort),
+				Host:   fmt.Sprintf("%s:%d", address.TargetIP(), address.TargetPort()),
 			},
 			ProxyTCP:        cfg.ProxyTCP,
 			Unauthenticated: cfg.Unauthenticated,

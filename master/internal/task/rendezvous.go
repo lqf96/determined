@@ -251,7 +251,7 @@ func (r *rendezvous) info() ([]cAddress, []string, error) {
 		}
 
 		if len(addrs) == 1 {
-			raddrs = append(raddrs, addrs[0].HostIP)
+			raddrs = append(raddrs, addrs[0].TargetIP())
 		} else {
 			err = multierror.Append(err, fmt.Errorf(
 				"found %d rendezvous addresses instead of 1 for container %s; dropping rendezvous addresses %v",

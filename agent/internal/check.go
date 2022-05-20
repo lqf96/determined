@@ -98,8 +98,16 @@ func mapPortToHost(port int, net *types.NetworkSettings) (string, error) {
 		}
 
 		bindings := net.Ports[natPort]
+		// Unpublished port (possibly under direct connectivity mode)
 		if len(bindings) == 0 {
-			return "", errors.Errorf("could not find mapping for port %d", port)
+			var containerIP string
+			// Get container IP address
+			for _, network := range net.Networks {
+				containerIP = network.IPAddress
+				break
+			}
+
+			return fmt.Sprintf("%s:%d", containerIP, port), nil
 		}
 
 		// If there are multiple bindings, picking any one of them should be fine.

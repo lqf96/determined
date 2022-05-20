@@ -294,8 +294,6 @@ func (p *pod) receivePodStatusUpdate(ctx *actor.Context, msg podStatusUpdate) er
 			addresses = append(addresses, cproto.Address{
 				ContainerIP:   p.pod.Status.PodIP,
 				ContainerPort: port,
-				HostIP:        p.pod.Status.PodIP,
-				HostPort:      port,
 			})
 		}
 		var taskContainerID string

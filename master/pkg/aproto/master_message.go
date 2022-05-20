@@ -98,8 +98,6 @@ func (c ContainerStarted) Addresses() []cproto.Address {
 			addresses = append(addresses, cproto.Address{
 				ContainerIP:   proxy,
 				ContainerPort: port.Int(),
-				HostIP:        proxy,
-				HostPort:      port.Int(),
 			})
 		}
 	default:
@@ -113,36 +111,48 @@ func (c ContainerStarted) Addresses() []cproto.Address {
 		}
 
 		for port, bindings := range info.NetworkSettings.Ports {
-			for _, binding := range bindings {
+			// Unpublished port (possibly under direct connectivity mode)
+			if len(bindings) == 0 {
 				for _, ip := range ipAddresses {
-					hostIP := binding.HostIP
-					switch {
-					case hostIP == "0.0.0.0":
-						// Just don't return the ipv4 binding for an ipv6 proxy
-						if !proxyIsIPv4 {
-							continue
-						}
-						hostIP = proxy
-					case hostIP == "::":
-						// And vice versa.
-						if proxyIsIPv4 {
-							continue
-						}
-						hostIP = proxy
-					case hostIP == "":
-						hostIP = proxy
-					}
-
-					hostPort, err := strconv.Atoi(binding.HostPort)
-					if err != nil {
-						panic(errors.Wrapf(err, "unexpected host port: %s", binding.HostPort))
-					}
-
 					addresses = append(addresses, cproto.Address{
 						ContainerIP:   ip,
 						ContainerPort: port.Int(),
-						HostIP:        hostIP,
-						HostPort:      hostPort,
+					})
+				}
+				continue
+			}
+
+			// Published port
+			for _, binding := range bindings {
+				hostIP := binding.HostIP
+				switch {
+				case hostIP == "0.0.0.0":
+					// Just don't return the ipv4 binding for an ipv6 proxy
+					if !proxyIsIPv4 {
+						continue
+					}
+					hostIP = proxy
+				case hostIP == "::":
+					// And vice versa.
+					if proxyIsIPv4 {
+						continue
+					}
+					hostIP = proxy
+				case hostIP == "":
+					hostIP = proxy
+				}
+
+				hostPort, err := strconv.Atoi(binding.HostPort)
+				if err != nil {
+					panic(errors.Wrapf(err, "unexpected host port: %s", binding.HostPort))
+				}
+
+				for _, ip := range ipAddresses {
+					addresses = append(addresses, cproto.Address{
+						ContainerIP:   ip,
+						ContainerPort: port.Int(),
+						HostIP:        &hostIP,
+						HostPort:      &hostPort,
 					})
 				}
 			}

@@ -274,8 +274,10 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 		tlsConfig,
 	)
 
-	fluentPorts := make(nat.PortSet)
-	fluentPorts[nat.Port(fmt.Sprintf("%d/tcp", f.opts.Fluent.Port))] = struct{}{}
+	fluentPort := f.opts.Fluent.Port
+	fluentExposedPorts, fluentPortBindings, _ := nat.ParsePortSpecs([]string{
+		fmt.Sprintf("127.0.0.1:%d:%d", fluentPort, fluentPort),
+	})
 
 	createResponse, err := f.docker.Inner().ContainerCreate(
 		ctx,
@@ -284,7 +286,7 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 			Cmd:        fluentArgs,
 			WorkingDir: fluentBaseDir,
 			// Expose fluent port
-			ExposedPorts: fluentPorts,
+			ExposedPorts: fluentExposedPorts,
 		},
 		&dcontainer.HostConfig{
 			// Set autoremove to reduce the number of states that the container is likely to be in and what
@@ -293,8 +295,8 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 			AutoRemove: true,
 			// Launch Fluent in given network
 			NetworkMode: dcontainer.NetworkMode(*network),
-			// Expose Fluent port to host
-			PublishAllPorts: true,
+			// Fluent port bindings
+			PortBindings: fluentPortBindings,
 			// Provide some reasonable resource limits on the container just to be safe.
 			Resources: dcontainer.Resources{
 				Memory:   1 << 30,

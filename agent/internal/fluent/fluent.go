@@ -193,6 +193,11 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 	t0 := time.Now()
 
 	imageName := f.opts.Fluent.Image
+	network := f.opts.Fluent.Network
+	if network == nil {
+		hostNetwork := "host"
+		network = &hostNetwork
+	}
 
 	if err := removeContainerByName(ctx, f.docker, f.opts.Fluent.ContainerName); err != nil {
 		return "", errors.Wrap(err, "failed to kill old logging container")
@@ -280,8 +285,8 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 			// we have to do to manage it cleanly. Restart on failure could be useful, but it conflcts with
 			// autoremove; we may want to consider switching to that instead at some point.
 			AutoRemove: true,
-			// Always use host mode to simplify the space of networking scenarios we have to consider.
-			NetworkMode: "host",
+			// Launch Fluent in given network
+			NetworkMode: *network,
 			// Provide some reasonable resource limits on the container just to be safe.
 			Resources: dcontainer.Resources{
 				Memory:   1 << 30,

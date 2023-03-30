@@ -24,6 +24,7 @@ import (
 	dcontainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -273,12 +274,17 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 		tlsConfig,
 	)
 
+	fluentPorts := make(nat.PortSet)
+	fluentPorts[nat.Port(fmt.Sprintf("%d/tcp", f.opts.Fluent.Port))] = struct{}{}
+
 	createResponse, err := f.docker.Inner().ContainerCreate(
 		ctx,
 		&dcontainer.Config{
 			Image:      imageName,
 			Cmd:        fluentArgs,
 			WorkingDir: fluentBaseDir,
+			// Expose fluent port
+			ExposedPorts: fluentPorts,
 		},
 		&dcontainer.HostConfig{
 			// Set autoremove to reduce the number of states that the container is likely to be in and what
@@ -287,6 +293,8 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 			AutoRemove: true,
 			// Launch Fluent in given network
 			NetworkMode: dcontainer.NetworkMode(*network),
+			// Expose Fluent port to host
+			PublishAllPorts: true,
 			// Provide some reasonable resource limits on the container just to be safe.
 			Resources: dcontainer.Resources{
 				Memory:   1 << 30,

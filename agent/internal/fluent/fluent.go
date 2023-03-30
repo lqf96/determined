@@ -286,7 +286,7 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 			// autoremove; we may want to consider switching to that instead at some point.
 			AutoRemove: true,
 			// Launch Fluent in given network
-			NetworkMode: *network,
+			NetworkMode: dcontainer.NetworkMode(*network),
 			// Provide some reasonable resource limits on the container just to be safe.
 			Resources: dcontainer.Resources{
 				Memory:   1 << 30,

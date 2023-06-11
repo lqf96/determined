@@ -136,9 +136,10 @@ func (t TLSOptions) ReadClientCertificate() (*tls.Certificate, error) {
 
 // FluentOptions stores configurable Fluent Bit-related options.
 type FluentOptions struct {
-	Image         string `json:"image"`
-	Port          int    `json:"port"`
-	ContainerName string `json:"container_name"`
+	Image         string  `json:"image"`
+	Port          int     `json:"port"`
+	ContainerName string  `json:"container_name"`
+	Network       *string `json:"network,omitempty"`
 }
 
 // HooksOptions contains external commands to be run when specific things happen.

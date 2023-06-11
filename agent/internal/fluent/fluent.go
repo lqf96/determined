@@ -24,6 +24,7 @@ import (
 	dcontainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -193,6 +194,11 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 	t0 := time.Now()
 
 	imageName := f.opts.Fluent.Image
+	network := f.opts.Fluent.Network
+	if network == nil {
+		hostNetwork := "host"
+		network = &hostNetwork
+	}
 
 	if err := removeContainerByName(ctx, f.docker, f.opts.Fluent.ContainerName); err != nil {
 		return "", errors.Wrap(err, "failed to kill old logging container")
@@ -268,20 +274,29 @@ func (f *Fluent) startContainer(ctx context.Context) (string, error) {
 		tlsConfig,
 	)
 
+	fluentPort := f.opts.Fluent.Port
+	fluentExposedPorts, fluentPortBindings, _ := nat.ParsePortSpecs([]string{
+		fmt.Sprintf("127.0.0.1:%d:%d", fluentPort, fluentPort),
+	})
+
 	createResponse, err := f.docker.Inner().ContainerCreate(
 		ctx,
 		&dcontainer.Config{
 			Image:      imageName,
 			Cmd:        fluentArgs,
 			WorkingDir: fluentBaseDir,
+			// Expose fluent port
+			ExposedPorts: fluentExposedPorts,
 		},
 		&dcontainer.HostConfig{
 			// Set autoremove to reduce the number of states that the container is likely to be in and what
 			// we have to do to manage it cleanly. Restart on failure could be useful, but it conflcts with
 			// autoremove; we may want to consider switching to that instead at some point.
 			AutoRemove: true,
-			// Always use host mode to simplify the space of networking scenarios we have to consider.
-			NetworkMode: "host",
+			// Launch Fluent in given network
+			NetworkMode: dcontainer.NetworkMode(*network),
+			// Fluent port bindings
+			PortBindings: fluentPortBindings,
 			// Provide some reasonable resource limits on the container just to be safe.
 			Resources: dcontainer.Resources{
 				Memory:   1 << 30,

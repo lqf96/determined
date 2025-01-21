@@ -6,3 +6,6 @@ const DeterminedBirthday = "2017-08-02T00:00:00Z"
 
 // DeterminedIdentifier is an identifier used in the cloud to distinguish Determined instances.
 const DeterminedIdentifier = "determined-ai-determined"
+
+// Docker container label for task environment ports information.
+const TaskEnvPortsLabel = "ai.determined.task-env-ports"

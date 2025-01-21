@@ -29,6 +29,7 @@ type TaskContainerDefaultsConfig struct {
 	GLOOPortRange          string                `json:"gloo_port_range,omitempty"`
 	ShmSizeBytes           int64                 `json:"shm_size_bytes,omitempty"`
 	NetworkMode            container.NetworkMode `json:"network_mode,omitempty"`
+	FlatNetwork            bool                  `json:"flat_network,omitempty"`
 	// TODO(DET-9855) we should move these over to KubernetesTaskContainerDefaults.
 	CPUPodSpec           *k8sV1.Pod           `json:"cpu_pod_spec"`
 	GPUPodSpec           *k8sV1.Pod           `json:"gpu_pod_spec"`
@@ -207,6 +208,10 @@ func (c TaskContainerDefaultsConfig) Merge(
 
 	if other.NetworkMode != "" {
 		res.NetworkMode = other.NetworkMode
+	}
+
+	if other.FlatNetwork {
+		res.FlatNetwork = other.FlatNetwork
 	}
 
 	if other.CPUPodSpec != nil {

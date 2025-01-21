@@ -132,10 +132,8 @@ func TestAllocation(t *testing.T) {
 				containerStateChanged.ResourcesStarted = &sproto.ResourcesStarted{
 					Addresses: []cproto.Address{
 						{
-							ContainerIP:   "172.0.0.3",
-							ContainerPort: 1734,
-							HostIP:        "0.0.0.0",
-							HostPort:      1734,
+							ContainerAddrPort: cproto.AddrPort{"172.0.0.3", 1734},
+							HostAddrPort:      &cproto.AddrPort{"0.0.0.0", 1734},
 						},
 					},
 				}

@@ -325,10 +325,8 @@ func (j *job) getGatewayAddresses() []cproto.Address {
 	var addresses []cproto.Address
 	for _, g := range j.gatewayProxyResources {
 		addresses = append(addresses, cproto.Address{
-			ContainerIP:   j.internalTaskGWConfig.GatewayIP,
-			HostIP:        j.internalTaskGWConfig.GatewayIP,
-			ContainerPort: g.PodPort(),
-			HostPort:      g.GWPort(),
+			ContainerAddrPort: cproto.AddrPort{j.internalTaskGWConfig.GatewayIP, g.PodPort()},
+			HostAddrPort:      &cproto.AddrPort{j.internalTaskGWConfig.GatewayIP, g.GWPort()},
 		})
 	}
 

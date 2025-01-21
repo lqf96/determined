@@ -200,7 +200,7 @@ func (r *rendezvous) info() ([]cAddress, []string, []int32, error) {
 			a := caddr.addresses[i]
 			b := caddr.addresses[j]
 
-			return a.ContainerPort < b.ContainerPort
+			return a.ContainerAddrPort.Port < b.ContainerAddrPort.Port
 		})
 	}
 
@@ -223,14 +223,14 @@ func (r *rendezvous) info() ([]cAddress, []string, []int32, error) {
 	for _, caddr := range caddrs {
 		var addrs []cproto.Address
 		for _, addr := range caddr.addresses {
-			if minLocalRendezvousPort <= addr.ContainerPort &&
-				addr.ContainerPort <= maxLocalRendezvousPort {
+			if minLocalRendezvousPort <= addr.ContainerAddrPort.Port &&
+				addr.ContainerAddrPort.Port <= maxLocalRendezvousPort {
 				addrs = append(addrs, addr)
 			}
 		}
 
 		if len(addrs) == 1 {
-			raddrs = append(raddrs, addrs[0].HostIP)
+			raddrs = append(raddrs, addrs[0].TargetAddrPort().IP)
 			slots = append(slots, int32(caddr.slots))
 		} else {
 			err = multierror.Append(err, fmt.Errorf(

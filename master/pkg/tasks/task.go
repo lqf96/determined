@@ -9,10 +9,13 @@ import (
 	"strings"
 
 	docker "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/go-connections/nat"
 	"github.com/jinzhu/copier"
 
 	"github.com/determined-ai/determined/master/internal/config"
+	"github.com/determined-ai/determined/master/pkg"
 	"github.com/determined-ai/determined/master/pkg/archive"
 	"github.com/determined-ai/determined/master/pkg/cproto"
 	"github.com/determined-ai/determined/master/pkg/device"
@@ -21,8 +24,8 @@ import (
 	"github.com/determined-ai/determined/master/pkg/schemas/expconf"
 )
 
-// File location constants.
 const (
+	// File location constants.
 	// DefaultWorkDir is the default workdir.
 	DefaultWorkDir    = "/run/determined/workdir"
 	userPythonBaseDir = "/run/determined/pythonuserbase"
@@ -35,6 +38,7 @@ const (
 	ShadowPath        = "/run/determined/etc/shadow"
 	GroupPath         = "/run/determined/etc/group"
 	certPath          = "/run/determined/etc/ssl/master.crt"
+
 	// DtrainSSHPortBase is starting range for Dtrain ports.
 	DtrainSSHPortBase = 12350
 	// InterTrainProcessCommPort1Base is starting range for intertraincomm1 ports.
@@ -51,6 +55,9 @@ const (
 	InterTrainProcessCommPort2 = "INTER_TRAIN_PROCESS_COMM_PORT_2"
 	// C10DPort is the name of a port.
 	C10DPort = "C10D_PORT"
+
+	// Docker Host network mode.
+	hostMode container.NetworkMode = "host"
 )
 
 // TaskSpecifier creates a TaskSpec. ToTaskSpec must only be called once per specifier.
@@ -275,6 +282,29 @@ func (t *TaskSpec) ToDockerSpec() cproto.Spec {
 	if t.UseHostMode {
 		network = hostMode
 	}
+	mapPorts := !(network.IsHost() || t.TaskContainerDefaults.FlatNetwork)
+
+	// Docker container labels. Consider adding label configurations to task
+	// container defaults and experiment settings in the future.
+	labels := make(map[string]string)
+	// Store ports information in container labels. This is necessary as we can't
+	// expose and map ports under certain types of networks (e.g. macvlan, ipvlan),
+	// yet we still need to retrieve ports from container information later when
+	// the container is started.
+	ports := env.Ports()
+	if taskEnvPorts, err := json.Marshal(ports); err == nil {
+		labels[pkg.TaskEnvPortsLabel] = string(taskEnvPorts)
+	} else {
+		panic("failed to serialize exposed ports information")
+	}
+
+	exposedPorts := make(nat.PortSet)
+	// Only populate exposed ports if we are going to map ports
+	if mapPorts {
+		for _, port := range ports {
+			exposedPorts[nat.Port(fmt.Sprintf("%d/tcp", port))] = struct{}{}
+		}
+	}
 
 	shmSize := t.ShmSize
 	if shmSize == 0 {
@@ -301,20 +331,20 @@ func (t *TaskSpec) ToDockerSpec() cproto.Spec {
 		RunSpec: cproto.RunSpec{
 			ContainerConfig: docker.Config{
 				User:         getUser(t.AgentUserGroup),
-				ExposedPorts: toPortSet(env.Ports()),
+				ExposedPorts: exposedPorts,
 				Env:          envVars,
 				Cmd:          t.LogShipperWrappedEntrypoint(),
 				Image:        env.Image().For(deviceType),
 				WorkingDir:   t.WorkDir,
+				Labels:       labels,
 			},
 			HostConfig: docker.HostConfig{
 				NetworkMode:     network,
 				Mounts:          t.Mounts,
-				PublishAllPorts: true,
+				PublishAllPorts: mapPorts,
 				ShmSize:         shmSize,
 				CapAdd:          env.AddCapabilities(),
 				CapDrop:         env.DropCapabilities(),
-
 				Resources: docker.Resources{
 					Devices: devices,
 				},

@@ -230,7 +230,7 @@ func (r *rendezvous) info() ([]cAddress, []string, []int32, error) {
 		}
 
 		if len(addrs) == 1 {
-			raddrs = append(raddrs, addrs[0].HostIP)
+			raddrs = append(raddrs, addrs[0].TargetAddrPort().IP)
 			slots = append(slots, int32(caddr.slots))
 		} else {
 			err = multierror.Append(err, fmt.Errorf(

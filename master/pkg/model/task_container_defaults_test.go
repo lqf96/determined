@@ -84,6 +84,7 @@ func TestTaskContainerDefaultsConfigMerging(t *testing.T) {
 		GLOOPortRange:          "3-4",
 		ShmSizeBytes:           1234,
 		NetworkMode:            "host",
+		FlatNetwork:            false,
 		CPUPodSpec: &k8sV1.Pod{
 			Spec: k8sV1.PodSpec{
 				Volumes: []k8sV1.Volume{
@@ -190,6 +191,7 @@ func TestTaskContainerDefaultsConfigMerging(t *testing.T) {
 				GLOOPortRange:          "5-6",
 				ShmSizeBytes:           6789,
 				NetworkMode:            "bridge",
+				FlatNetwork:            true,
 				PreemptionTimeout:      60,
 				CPUPodSpec: &k8sV1.Pod{
 					Spec: k8sV1.PodSpec{
@@ -277,6 +279,7 @@ func TestTaskContainerDefaultsConfigMerging(t *testing.T) {
 				GLOOPortRange:          "5-6",
 				ShmSizeBytes:           6789,
 				NetworkMode:            "bridge",
+				FlatNetwork:            true,
 				PreemptionTimeout:      60,
 				CPUPodSpec: &k8sV1.Pod{
 					Spec: k8sV1.PodSpec{

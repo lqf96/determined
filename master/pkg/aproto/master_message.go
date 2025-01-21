@@ -13,8 +13,8 @@ import (
 
 	"github.com/determined-ai/determined/master/pkg/cproto"
 	"github.com/determined-ai/determined/master/pkg/device"
-
 	"github.com/determined-ai/determined/master/pkg/model"
+	"github.com/determined-ai/determined/master/pkg/tasks"
 )
 
 // TelemetryInfo contains the telemetry settings for the master.
@@ -110,17 +110,28 @@ func (c ContainerStarted) Addresses() []cproto.Address {
 	info := c.ContainerInfo
 
 	var addresses []cproto.Address
-	switch info.HostConfig.NetworkMode {
-	case "host":
-		for port := range info.Config.ExposedPorts {
+	// Container has no mapped ports. Collect ports from information saved in
+	// container labels.
+	if len(info.Config.ExposedPorts) == 0 {
+		labels := info.Config.Labels
+		// All task containers should have the ports label, but let's be permissive
+		// in case we missed something
+		if taskEnvPorts, present := labels[tasks.TaskEnvPortsLabel]; !present {
+			return nil
+		}
+
+		var ports map[string]int
+		if err := json.Unmarshal(taskEnvPorts, &ports); err != nil {
+			return nil
+		}
+
+		for _, port := range ports {
 			addresses = append(addresses, cproto.Address{
-				ContainerIP:   proxy,
-				ContainerPort: port.Int(),
-				HostIP:        proxy,
-				HostPort:      port.Int(),
+				ContainerAddrPort: cproto.AddrPort{proxy, port},
 			})
 		}
-	default:
+	// Container has mapped ports. Collect ports from port mappings.
+	} else {
 		if info.NetworkSettings == nil {
 			return nil
 		}
@@ -157,10 +168,8 @@ func (c ContainerStarted) Addresses() []cproto.Address {
 					}
 
 					addresses = append(addresses, cproto.Address{
-						ContainerIP:   ip,
-						ContainerPort: port.Int(),
-						HostIP:        hostIP,
-						HostPort:      hostPort,
+						ContainerAddrPort: cproto.AddrPort{ip, port.Int()},
+						HostAddrPort:      &cproto.AddrPort{hostIP, hostPort},
 					})
 				}
 			}

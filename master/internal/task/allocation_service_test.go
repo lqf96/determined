@@ -158,16 +158,12 @@ func TestServiceRendezvous(t *testing.T) {
 		ResourcesStarted: &sproto.ResourcesStarted{
 			Addresses: []cproto.Address{
 				{
-					ContainerIP:   "localhost",
-					ContainerPort: minLocalRendezvousPort,
-					HostIP:        "remotehost",
-					HostPort:      minLocalRendezvousPort,
+					ContainerAddrPort: cproto.AddrPort{"localhost", minLocalRendezvousPort},
+					HostAddrPort:      &cproto.AddrPort{"remotehost", minLocalRendezvousPort},
 				},
 				{
-					ContainerIP:   "localhost",
-					ContainerPort: 24,
-					HostIP:        "remotehost",
-					HostPort:      25,
+					ContainerAddrPort: cproto.AddrPort{"localhost", 24},
+					HostAddrPort:      &cproto.AddrPort{"remotehost", 25},
 				},
 			},
 		},
@@ -218,10 +214,8 @@ func TestGracefullyTerminateAfterRestart(t *testing.T) {
 		ResourcesStarted: &sproto.ResourcesStarted{
 			Addresses: []cproto.Address{
 				{
-					ContainerIP:   "localhost",
-					ContainerPort: minLocalRendezvousPort,
-					HostIP:        "remotehost",
-					HostPort:      minLocalRendezvousPort,
+					ContainerAddrPort: cproto.AddrPort{"localhost", minLocalRendezvousPort},
+					HostAddrPort:      &cproto.AddrPort{"remotehost", minLocalRendezvousPort},
 				},
 			},
 		},
@@ -298,16 +292,12 @@ func TestAllGather(t *testing.T) {
 		ResourcesStarted: &sproto.ResourcesStarted{
 			Addresses: []cproto.Address{
 				{
-					ContainerIP:   "localhost",
-					ContainerPort: minLocalRendezvousPort,
-					HostIP:        "remotehost",
-					HostPort:      minLocalRendezvousPort,
+					ContainerAddrPort: cproto.AddrPort{"localhost", minLocalRendezvousPort},
+					HostAddrPort:      &cproto.AddrPort{"remotehost", minLocalRendezvousPort},
 				},
 				{
-					ContainerIP:   "localhost",
-					ContainerPort: 24,
-					HostIP:        "remotehost",
-					HostPort:      25,
+					ContainerAddrPort: cproto.AddrPort{"localhost", 24},
+					HostAddrPort:      &cproto.AddrPort{"remotehost", 25},
 				},
 			},
 		},

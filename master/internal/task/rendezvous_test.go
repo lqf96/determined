@@ -187,10 +187,8 @@ func TestRendezvousTimeout(t *testing.T) {
 func addressesFromContainerID(rID sproto.ResourcesID) []cproto.Address {
 	return []cproto.Address{
 		{
-			ContainerIP:   "172.0.1.2",
-			ContainerPort: 1734,
-			HostIP:        fmt.Sprintf("%s.example.com", rID),
-			HostPort:      1734,
+			ContainerAddrPort: cproto.AddrPort{"172.0.1.2", 1734},
+			HostAddrPort:      &cproto.AddrPort{hostIP, 1734},
 		},
 	}
 }

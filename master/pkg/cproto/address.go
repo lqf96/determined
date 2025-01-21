@@ -6,24 +6,38 @@ import (
 	"github.com/determined-ai/determined/proto/pkg/taskv1"
 )
 
-// Address represents an exposed port on a container.
-type Address struct {
-	// ContainerIP is the IP address from inside the container.
-	ContainerIP string `json:"container_ip"`
-	// ContainerPort is the port from inside the container.
-	ContainerPort int `json:"container_port"`
-
-	// HostIP is the IP address from outside the container. This can be
-	// different than the ContainerIP because of network forwarding on the host
-	// machine.
-	HostIP string `json:"host_ip"`
-	// HostPort is the IP port from outside the container. This can be different
-	// than the ContainerPort because of network forwarding on the host machine.
-	HostPort int `json:"host_port"`
+// AddrPort is a pair of IP address and port number.
+type AddrPort struct {
+ 	IP string `json:"ip"`
+	Port int `json:"port"`
 }
 
+// Address represents an exposed port on a container.
+type Address struct {
+	// ContainerAddrPort is the IP address and port pair from inside the container.
+	ContainerAddrPort AddrPort `json:"container_addr"`
+	// HostAddrPort is the IP address and port pair from outside the container,
+	// when the port is forwarded to the host machine.
+	HostAddrPort *AddrPort `json:"host_addr,omitempty"`
+}
+
+func (a AddrPort) String() string {
+	return fmt.Sprintf("%s:%d", a.IP, a.Port)
+}
+	 
 func (a Address) String() string {
-	return fmt.Sprintf("%s:%d:%s:%d", a.HostIP, a.HostPort, a.ContainerIP, a.ContainerPort)
+	addrStr := a.ContainerAddrPort.String()
+	if a.HostAddrPort != nil {
+		addrStr = fmt.Sprintf("%s:%s", a.HostAddrPort.String(), addrStr)
+	}
+	return addrStr
+}
+
+func (a Address) TargetAddrPort() AddrPort {
+	if a.HostAddrPort != nil {
+		return *a.HostAddrPort
+	}
+	return a.ContainerAddrPort
 }
 
 // Proto returns the proto representation of address.
@@ -32,9 +46,9 @@ func (a *Address) Proto() *taskv1.Address {
 		return nil
 	}
 	return &taskv1.Address{
-		ContainerIp:   a.ContainerIP,
-		ContainerPort: int32(a.ContainerPort),
-		HostIp:        a.HostIP,
-		HostPort:      int32(a.HostPort),
+		ContainerIp:   a.ContainerAddrPort.IP,
+		ContainerPort: int32(a.ContainerAddrPort.Port),
+		HostIp:        a.TargetAddrPort().IP,
+		HostPort:      int32(a.TargetAddrPort().Port),
 	}
 }
